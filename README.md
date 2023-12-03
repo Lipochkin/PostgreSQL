@@ -81,7 +81,8 @@ _________________________________________________
 
 3	   1783
 
-
+ locktype    | database | relation | page | tuple | virtualxid | transactionid | classid | objid | objsubid | virtualtransaction | pid  |       mode       | granted | fastpath |        waitstart
+ 
  relation      |        5 |    16400 |      |       |            |               |         |       |          | 6/7                | 1783 | RowExclusiveLock | t       | t        |
 
  relation      |        5 |    16395 |      |       |            |               |         |       |          | 6/7                | 1783 | RowExclusiveLock | t       | t        |
