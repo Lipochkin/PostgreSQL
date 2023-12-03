@@ -49,15 +49,23 @@ _________________________________________________
 
 Воспроизведите ситуацию, при которой в журнале появятся такие сообщения.
 
-***postgres@DESKTOP-3FFOGTK:/home/fkdark$ cat /var/log/postgresql/postgresql-15-test.log | grep "deadlock detected" -A 10
-2023-12-03 19:00:44.563 MSK [1779] postgres@postgres ERROR:  deadlock detected
-2023-12-03 19:00:44.563 MSK [1779] postgres@postgres DETAIL:  Process 1779 waits for ShareLock on transaction 748; blocked by process 1774.
-        Process 1774 waits for ShareLock on transaction 749; blocked by process 1779.
-        Process 1779: UPDATE test SET message = 'message from session 222' WHERE id = 1;
-        Process 1774: UPDATE test SET message = 'session 111' WHERE id = 2;
-2023-12-03 19:00:44.563 MSK [1779] postgres@postgres HINT:  See server log for query details.
-2023-12-03 19:00:44.563 MSK [1779] postgres@postgres CONTEXT:  while updating tuple (0,7) in relation "test"
-2023-12-03 19:00:44.563 MSK [1779] postgres@postgres STATEMENT:  UPDATE test SET message = 'message from session 222' WHERE id = 1;***
+***postgres@DESKTOP-3FFOGTK:/home/fkdark$ cat /var/log/postgresql/postgresql-15-test.log | grep "deadlock detected" -A 10***
+
+***2023-12-03 19:00:44.563 MSK [1779] postgres@postgres ERROR:  deadlock detected***
+
+***2023-12-03 19:00:44.563 MSK [1779] postgres@postgres DETAIL:  Process 1779 waits for ShareLock on transaction 748; blocked by process 1774.***
+
+***Process 1774 waits for ShareLock on transaction 749; blocked by process 1779.***
+        
+***Process 1779: UPDATE test SET message = 'message from session 222' WHERE id = 1;***
+        
+***Process 1774: UPDATE test SET message = 'session 111' WHERE id = 2;***
+        
+***2023-12-03 19:00:44.563 MSK [1779] postgres@postgres HINT:  See server log for query details.***
+
+***2023-12-03 19:00:44.563 MSK [1779] postgres@postgres CONTEXT:  while updating tuple (0,7) in relation "test"***
+
+***2023-12-03 19:00:44.563 MSK [1779] postgres@postgres STATEMENT:  UPDATE test SET message = 'message from session 222' WHERE id = 1;***
 
 Смоделируйте ситуацию обновления одной и той же строки тремя командами UPDATE в разных сессиях. 
 
