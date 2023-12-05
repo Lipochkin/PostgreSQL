@@ -6,10 +6,32 @@
 настроить параметры PostgreSQL для достижения максимальной производительности
 
 Описание/Пошаговая инструкция выполнения домашнего задания:
-развернуть виртуальную машину любым удобным способом
+развернуть виртуальную машину любым удобным способом - ***8 CPU, 32Gb RAM, SSD***
 поставить на неё PostgreSQL 15 любым способом
 настроить кластер PostgreSQL 15 на максимальную производительность не обращая внимание на возможные проблемы с надежностью в случае аварийной перезагрузки виртуальной машины
 нагрузить кластер через утилиту через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench)
-написать какого значения tps удалось достичь, показать какие параметры в какие значения устанавливали и почему
+написать какого значения tps удалось достичь, показать какие параметры в какие значения устанавливали и почему - лучший результат 1273 tps
+
+max_connections = 100
+shared_buffers = 8GB
+effective_cache_size = 24GB
+maintenance_work_mem = 2GB
+checkpoint_completion_target = 0.9
+wal_buffers = 16MB
+default_statistics_target = 100
+random_page_cost = 1.1
+effective_io_concurrency = 200
+work_mem = 20971kB
+min_wal_size = 2GB
+max_wal_size = 8GB
+fsync = off
+synchronous_commit = off
+checkpoint_timeout = 1d
+wal_init_zero = off
+max_worker_processes = 8
+max_parallel_workers_per_gather = 4
+max_parallel_workers = 8
+max_parallel_maintenance_workers = 4
+
 Задание со *: аналогично протестировать через утилиту https://github.com/Percona-Lab/sysbench-tpcc (требует установки
 https://github.com/akopytov/sysbench)
