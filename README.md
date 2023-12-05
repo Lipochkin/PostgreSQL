@@ -18,17 +18,15 @@
 
 нагрузить кластер через утилиту через утилиту pgbench (https://postgrespro.ru/docs/postgrespro/14/pgbench)
 
-написать какого значения tps удалось достичь, показать какие параметры в какие значения устанавливали и почему - ***лучший зафиксированный результат 1273 tps, было выше, но она упала***
+написать какого значения tps удалось достичь, показать какие параметры в какие значения устанавливали и почему - ***лучший зафиксированный результат 1273 tps***
 
-***Настройки согласно занятию + немного из интернета***
+***Настройки***
 
 max_connections = 100
 
 shared_buffers = 8GB
 
 effective_cache_size = 24GB
-
-maintenance_work_mem = 2GB
 
 checkpoint_completion_target = 0.9
 
@@ -40,19 +38,13 @@ random_page_cost = 1.1
 
 effective_io_concurrency = 200
 
-work_mem = 20971kB
+work_mem = 32Mb
 
 min_wal_size = 2GB
 
 max_wal_size = 8GB
 
-fsync = off
-
-synchronous_commit = off
-
-checkpoint_timeout = 1d
-
-wal_init_zero = off
+maintenance_work_mem = 2GB
 
 max_worker_processes = 8
 
