@@ -52,7 +52,7 @@
 Сделать комментарии на каждый запрос
 К работе приложить структуру таблиц, для которых выполнялись соединения - ***Взял готовую БД - https://edu.postgrespro.ru/demo_small.zip***
 
-(https://postgrespro.ru/media/docs/postgrespro/9.6/ru/demodb-bookings-schema.svg)
+![schema](https://postgrespro.ru/media/docs/postgrespro/9.6/ru/demodb-bookings-schema.svg)
 
 Задание со звездочкой*
 Придумайте 3 своих метрики на основе показанных представлений, отправьте их через ЛК, а так же поделитесь с коллегами в слаке
