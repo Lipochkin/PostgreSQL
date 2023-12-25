@@ -59,12 +59,36 @@ from bookings.aircrafts a
 limit 3
 ```
 
-Реализовать левостороннее (или правостороннее)
-соединение двух или более таблиц
-Реализовать кросс соединение двух или более таблиц
+Реализовать левостороннее (или правостороннее) соединение двух или более таблиц, реализовать запрос, в котором будут использованы
+разные типы соединений:
+
+***Максимально заполненные самолеты ТОП3***
+```
+select f.flight_id, count(tf.*) / count(s.*) * 100 from bookings.flights f
+join bookings.aircrafts a on f.aircraft_code = a.aircraft_code
+join bookings.seats s on a.aircraft_code = s.aircraft_code
+left join bookings.ticket_flights tf on f.flight_id = tf.flight_id
+limit 3
+```
+
+Реализовать кросс соединение двух или более таблиц:
+
+***Максимально удаленные друг от друга аэропорты***
+```
+select a.city, b.city, (point(a.longitude,a.latitude) <@> point(b.longitude,b.latitude)) as distance from bookings.airports a
+cross join bookings.airports b
+order by distance desc
+limit 1
+```
 Реализовать полное соединение двух или более таблиц
-Реализовать запрос, в котором будут использованы
-разные типы соединений
+
+***Просмотр всех мест в каждом самолете***
+```
+select * from aircrafts b
+full join seats mb on aircraft_code=mb.id
+order by aircraft_code desc
+```
+
 Сделать комментарии на каждый запрос
 К работе приложить структуру таблиц, для которых выполнялись соединения - ***Взял готовую БД - https://edu.postgrespro.ru/demo_small.zip***
 
