@@ -34,6 +34,8 @@
 
 
 Использовал БД:
+
+
 ![2](https://github.com/Lipochkin/PostgreSQL/assets/147322715/6d8f247e-0577-40cb-a5e4-166e48e7d7a5)
 
 Создано три индекса:
