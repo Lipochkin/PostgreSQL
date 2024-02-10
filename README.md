@@ -203,7 +203,7 @@ begin
 		select tf.ticket_no, tf.flight_id, tf.fare_conditions, tf.amount from ticket_flights tf where tf.fare_conditions = fare_condition;
 	end loop;	
 
-	ALTER TABLE bookings.boarding_passes DROP CONSTRAINT boarding_passes_ticket_no_fkey; -- удаляем ключ, который ссылался на старую таблицу и добавляем на новую
+	ALTER TABLE bookings.boarding_passes DROP CONSTRAINT boarding_passes_ticket_no_fkey; -- удаляем старый ключ, добавляем ключ на новую таблицу
 	
 	DROP TABLE bookings.ticket_flights; -- удаляем старую таблицу
 
