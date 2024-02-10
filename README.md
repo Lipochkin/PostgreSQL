@@ -116,6 +116,7 @@ __После индекса__
 
 - Индекс на часть таблицы Work_Shift по полям fk_staff, fk_shop_point (индекс btree)
 - create index idx_ord_order_date_inc_status on Work_Shift(fk_staff) include (fk_shop_point)
+  
 __До индекса__
 ``` 
  Hash Join  (cost=3.49..6.22 rows=100 width=33) (actual time=0.048..0.079 rows=100 loops=1)
