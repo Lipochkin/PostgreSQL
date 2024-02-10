@@ -1,0 +1,82 @@
+Описание/Пошаговая инструкция выполнения домашнего задания:
+
+Секционировать большую таблицу из демо базы flights
+
+***Секционировал таблицу `ticket_flights` по параметру (`fare_conditions`)***
+
+
+```
+
+declare
+	fare_conditions	constant varchar(20)[] = array['Business', 'Comfort', 'Economy'];
+	fare_condition varchar(20);
+begin
+	
+	CREATE TABLE bookings.ticket_flights_part (
+		ticket_no bpchar(13) NOT NULL,
+		flight_id int4 NOT NULL,
+		fare_conditions varchar(10) NOT NULL,
+		amount numeric(10, 2) NOT NULL,
+		CONSTRAINT ticket_flights_part_amount_check CHECK ((amount >= (0)::numeric)),
+		CONSTRAINT ticket_flights_part_pkey PRIMARY KEY (ticket_no, flight_id, fare_conditions)
+	) partition by list (fare_conditions);
+
+	foreach fare_condition in array fare_conditions -- добавляем секции
+	loop
+		RAISE NOTICE E'create table bookings.ticket_flights_%s partition', lower(fare_condition);
+		execute format('create table bookings.ticket_flights_%s partition of bookings.ticket_flights_part for values in (%s);', lower(fare_condition), quote_literal(fare_condition));	
+	end loop;
+
+	foreach fare_condition in array fare_conditions -- переносим данные
+	loop
+		RAISE NOTICE E'insert to fare_conditions %s', lower(fare_condition);
+		insert into bookings.ticket_flights_part (ticket_no, flight_id, fare_conditions, amount)
+		select tf.ticket_no, tf.flight_id, tf.fare_conditions, tf.amount from ticket_flights tf where tf.fare_conditions = fare_condition;
+	end loop;	
+
+	ALTER TABLE bookings.boarding_passes DROP CONSTRAINT boarding_passes_ticket_no_fkey; -- удаляем ключ, который ссылался на старую таблицу и добавляем на новую
+	
+	DROP TABLE bookings.ticket_flights; -- удаляем старую таблицу
+
+	ALTER TABLE bookings.ticket_flights_part RENAME TO ticket_flights; -- переименовываем новую таблицу в ticket_flights и добавляем внешние ключи
+	ALTER TABLE bookings.ticket_flights ADD CONSTRAINT ticket_flights_flight_id_fkey FOREIGN KEY (flight_id) REFERENCES flights(flight_id);
+	ALTER TABLE bookings.ticket_flights ADD CONSTRAINT ticket_flights_ticket_no_fkey FOREIGN KEY (ticket_no) REFERENCES tickets(ticket_no);
+
+end;
+
+```
+
+***Сравнение планов запросов для версии до партиционирования и после. В результате видим значительное ускорение.***
+
+```
+explain (analyze) select * from ticket_flights t where t.fare_conditions = 'Business' and t.amount >= 49700
+```
+
+До партиционирования
+
+```
+	QUERY PLAN
+	Gather (cost=1000.00..37153.39 rows=17313 width=32) (actual time=0.280..322.686 rows=74491 loops=1)
+	Workers Planned: 2
+	Workers Launched: 2
+	-> Parallel Seq Scan on ticket_flights_old tf (cost=0.00..34422.09 rows=7214 width=32) (actual time=0.021 ..242.378 rows=24830 loops=3)
+	Filter ((amount >= '49700'::numeric) AND ((fare_conditions)::text = 'Business'::text))
+	Rows Removed by Filter 761948
+	Planning Time: 0374 ms
+	Execution Time: 321.704 ms
+	
+```
+
+После партиционирования
+
+```
+
+
+QUERY PLAN
+	Seq Scan on ticket_flights_business tf (cost=0.00..5652.06 rows= 74568 width=33) (actual time=0.005..31.532 rows= 74491 loops=1)
+	Filter ((amount >= '49700'::numeric) AND ((fare_conditions)::text = 'Business'::text))
+	Rows Removed by Filter: 167713
+	Planning Time: 0.173 ms
+	Execution Time: 38.172 ms
+
+```
