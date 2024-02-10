@@ -40,8 +40,10 @@
 
 Создано три индекса:
 
+Создано три индекса:
+- Использовал запросы select по индексируемым полям
 - Индекс для полнотекстового поиска в сущности Product по полю name. __idx_product_name__
-
+- create index idx_product_name on product(name)
 
 __До индекса__
 ```
@@ -65,7 +67,7 @@ __После индекса__
 
 
 - Индекс на часть таблицы Shop_Point_Products по полю count_products __idx_shop_point_products_count_products__(индекс btree)
-
+- create index idx_shop_point_products_count_products on Shop_Point_Products(count_products)
 
 __До индекса__
 ``` 
@@ -113,7 +115,7 @@ __После индекса__
 
 
 - Индекс на часть таблицы Work_Shift по полям fk_staff, fk_shop_point (индекс btree)
-
+- create index idx_ord_order_date_inc_status on Work_Shift(fk_staff) include (fk_shop_point)
 __До индекса__
 ``` 
  Hash Join  (cost=3.49..6.22 rows=100 width=33) (actual time=0.048..0.079 rows=100 loops=1)
