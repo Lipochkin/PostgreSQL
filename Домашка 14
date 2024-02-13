@@ -19,3 +19,107 @@
 Подсказка: не забыть, что кроме INSERT есть еще UPDATE и DELETE
 
 
+Функция для расчёта и обновления суммы за проданные товары на витрине ***good_sum_mart***
+
+```
+
+CREATE OR REPLACE FUNCTION compute_sales()
+RETURNS trigger
+AS
+$$
+DECLARE
+    data_row record;
+   	new_good_sum_mart_record record;
+BEGIN
+	
+	CASE TG_OP
+	    WHEN 'DELETE'
+	        THEN data_row = OLD;
+	    WHEN 'UPDATE'
+	        THEN data_row = NEW; 
+	    WHEN 'INSERT'
+	        THEN data_row = NEW;
+	END CASE;
+      
+   	SELECT G.good_name as good_name, coalesce(sum(G.good_price * S.sales_qty), 0) as sum_sale into new_good_sum_mart_record
+		FROM pract_functions.goods G
+		LEFT JOIN pract_functions.sales S ON S.good_id = G.goods_id
+		WHERE G.goods_id = data_row.good_id
+		GROUP BY G.good_name;
+   	
+	IF EXISTS (select 1 from pract_functions.good_sum_mart where good_name = new_good_sum_mart_record.good_name) then
+		IF (new_good_sum_mart_record.sum_sale = 0) then 
+			DELETE FROM pract_functions.good_sum_mart where good_name = new_good_sum_mart_record.good_name;
+		ELSE
+			update pract_functions.good_sum_mart set sum_sale = new_good_sum_mart_record.sum_sale where good_name = new_good_sum_mart_record.good_name;
+		END IF;
+	ELSE
+		insert into pract_functions.good_sum_mart (good_name, sum_sale) values (new_good_sum_mart_record.good_name, new_good_sum_mart_record.sum_sale);
+	END IF;
+
+  RETURN data_row;
+END;
+
+```
+
+Триггер на изменение записей в строках
+
+```
+
+CREATE TRIGGER trg_after_row_change_sales
+AFTER INSERT OR UPDATE OR DELETE
+ON pract_functions.sales
+FOR EACH ROW
+EXECUTE FUNCTION compute_sales();
+
+```
+
+Примеры
+
+Каталог товаров ***goods***:
+| goods_id	| good_name 	| good_price	|
+| ------------- | ------------- | ------------- |
+| 1		| Спички хозайственные | 0.50	|	
+| 2		| Автомобиль Ferrari FXX K	| 185000000.01	|
+
+Добавление продаж в ***sales***
+
+```
+INSERT INTO pract_functions.sales (good_id,sales_time,sales_qty) VALUES
+	 (1,'2024-01-09 10:05:11.264733+03',2),
+	 (1,'2024-01-10 20:05:11.264733+03',5),
+	 (2,'2024-01-09 00:05:11.264733+03',3);
+```
+
+Витрина ***good_sum_mart*** после изменений
+
+| good_name	| sum_sale 	|
+| ------------- | ------------- |
+| Спички хозайственные	| 3.50	|
+| Автомобиль Ferrari FXX K	| 555000000.03	|
+
+Апдейтим количество продаж спичек в ***sales***
+
+```
+update pract_functions.sales set sales_qty = 10 where sales_id = 2;
+```
+
+Витрина ***good_sum_mart*** после изменений
+
+| good_name	| sum_sale 	|
+| ------------- | ------------- |
+| Спички хозайственные	| 7.5	|
+| Автомобиль Ferrari FXX K	| 555000000.03	|
+
+Удаляем 2 и 3 строки с продажами из ***sales***
+
+```
+delete from pract_functions.sales where sales_id = 2; 
+delete from pract_functions.sales where sales_id = 3; 
+```
+
+Витрина ***good_sum_mart*** после изменений
+
+| good_name	| sum_sale 	|
+| ------------- | ------------- |
+| Спички хозайственные	| 2.5	|
