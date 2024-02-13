@@ -102,7 +102,7 @@ INSERT INTO pract_functions.sales (good_id,sales_time,sales_qty) VALUES
 Апдейтим количество продаж спичек в ***sales***
 
 ```
-update pract_functions.sales set sales_qty = 10 where sales_id = 2;
+update pract_functions.sales set sales_qty = 10 where sales_id = 1;
 ```
 
 Витрина ***good_sum_mart*** после изменений
