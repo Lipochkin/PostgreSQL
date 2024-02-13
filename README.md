@@ -124,7 +124,6 @@ delete from pract_functions.sales where sales_id = 3;
 | good_name	| sum_sale 	|
 | ------------- | ------------- |
 | Спички хозайственные	| 2.5	|
-	Execution Time: 38.172 ms
 
-```
+
 
