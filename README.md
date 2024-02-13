@@ -99,7 +99,7 @@ INSERT INTO pract_functions.sales (good_id,sales_time,sales_qty) VALUES
 | Спички хозайственные	| 3.50	|
 | Автомобиль Ferrari FXX K	| 555000000.03	|
 
-Апдейтим количество продаж спичек в ***sales***
+Апдейтим в 1 строке количество продаж спичек в ***sales***
 
 ```
 update pract_functions.sales set sales_qty = 10 where sales_id = 1;
