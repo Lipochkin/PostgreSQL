@@ -18,9 +18,9 @@ Machine: node2                   IP: 10.128.0.13                 Role: Postgresq
 
 Machine: node3                   IP: 10.128.0.35                 Role: Postgresql, Patroni
 
-Machine: etcdnode              IP: 10.128.0.21           Role: etcd
+Machine: etcdnode                IP: 10.128.0.21                 Role: etcd
 
-Machine: haproxynode       IP: 10.128.0.12     Role: HA Proxy
+Machine: haproxynode             IP: 10.128.0.12                 Role: HA Proxy
 ```
 
 
