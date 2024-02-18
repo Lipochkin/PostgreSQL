@@ -7,9 +7,9 @@ Schema:
 
 ![alt text](https://speedmedia.jfrog.com/08612fe1-9391-4cf3-ac1a-6dd49c36b276/https://media.jfrog.com/wp-content/uploads/2022/07/18231453/High_Available_PostgreSQL_Cluster_using_Patroni_and_HAProxy-1.jpg/w_768)
 
+```
 Architecture:
 OS: Ubuntu 22.04
-
 Postgres version: 15
 
 Machine: node1                   IP: 10.128.0.23                 Role: Postgresql, Patroni
@@ -21,7 +21,7 @@ Machine: node3                   IP: 10.128.0.35                 Role: Postgresq
 Machine: etcdnode              IP: 10.128.0.21           Role: etcd
 
 Machine: haproxynode       IP: 10.128.0.12     Role: HA Proxy
-
+```
 
 
 ***Инструкция по шагам***
