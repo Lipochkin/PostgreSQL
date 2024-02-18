@@ -10,55 +10,38 @@ Schema:
 Architecture:
 OS: Ubuntu 22.04
 
-Postgres version: 12
+Postgres version: 15
 
-Machine: node1                   IP: <node1_ip>                 Role: Postgresql, Patroni
+Machine: node1                   IP: 10.128.0.23                 Role: Postgresql, Patroni
 
-Machine: node2                   IP: <node2_ip>                 Role: Postgresql, Patroni
+Machine: node2                   IP: 10.128.0.13                 Role: Postgresql, Patroni
 
-Machine: node3                   IP: <node3_ip>                 Role: Postgresql, Patroni
+Machine: node3                   IP: 10.128.0.35                 Role: Postgresql, Patroni
 
-Machine: etcdnode              IP: <etcdnode_ip>           Role: etcd
+Machine: etcdnode              IP: 10.128.0.21           Role: etcd
 
-Machine: haproxynode       IP: <haproxynode_ip>     Role: HA Proxy
+Machine: haproxynode       IP: 10.128.0.12     Role: HA Proxy
 
 
-sudo apt update
 
-sudo hostnamectl set-hostname ***
-
-sudo apt install net-tools
-
-sudo vim /etc/hosts
-10.128.0.23 fkdarknode1
-10.128.0.13 fkdarknode2
-10.128.0.35 fkdarknode3
-10.128.0.21 fkdarketcd
-10.128.0.12 fkdarkhaproxy
-
-Step-by-step instructions guide
+***Инструкция по шагам***
  
-
 Step 1 –  Setup node1, node2, node3:
 
+```
 sudo apt update
 
 sudo hostnamectl set-hostname fkdarknodeN
 
 sudo apt install net-tools
 
-wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
-echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/postgresql-pgdg.list > /dev/null
-
-sudo apt update
-
-sudo apt-get install postgresql postgresql-server-dev-15
+sudo apt install postgresql-15
 
 sudo systemctl stop postgresql
 
 sudo ln -s /usr/lib/postgresql/15/bin/* /usr/sbin/
 
-//sudo apt install python-is-python3
+//sudo apt install python-is-python3 -- опционально, если следующий шаг выдает ошибку
 
 sudo apt -y install python3 python3-pip 
 
@@ -66,17 +49,18 @@ sudo apt install python3-testresources
 
 sudo pip3 install --upgrade setuptools 
 
-//sudo apt-get install --reinstall libpq-dev
+//sudo apt-get install --reinstall libpq-dev -- опционально, если следующий шаг выдает ошибку
  
 sudo pip3 install psycopg2 
 
 sudo pip3 install patroni
 
 sudo pip3 install python-etcd
-
+```
  
 
 Step 2 –  Setup etcdnode:
+
 
 sudo apt update
 
