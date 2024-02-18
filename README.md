@@ -26,7 +26,7 @@ Machine: haproxynode       IP: 10.128.0.12     Role: HA Proxy
 
 ***Инструкция по шагам***
  
-Step 1 –  Setup node1, node2, node3:
+Шаг 1 –  Первоначальная настройка node1, node2, node3:
 
 ```
 sudo apt update
@@ -59,7 +59,7 @@ sudo pip3 install python-etcd
 ```
  
 
-Step 2 –  Setup etcdnode:
+Шаг 2 –  Первоначальная настройка etcdnode:
 
 ```
 sudo apt update
@@ -72,7 +72,7 @@ sudo apt -y install etcd
 ```
  
 
-Step 3 – Setup haproxynode:
+Шаг 3 – Первоначальная настройка haproxynode:
 
 ```
 sudo apt update
@@ -85,7 +85,7 @@ sudo apt -y install haproxy
 ```
  
 
-Step 4 – Configure etcd on the etcdnode: 
+Шаг 4 – Настраиваем etcd на etcdnode: 
 
 ```
 sudo vi /etc/default/etcd   
@@ -107,7 +107,7 @@ curl http://10.128.0.29:2380/members -- проверка
 
  
 
-Step 5 – Configure Patroni on the node1, on the node2 and on the node3:
+Шаг 5 – Настраиваем Patroni на всех нодах:
 
 ```
 sudo vi /etc/patroni.yml
@@ -200,7 +200,7 @@ WantedBy=multi-user.target
 ```
  
 
-Step 6 – Start Patroni service on the node1, on the node2 and on the node3:
+Шаг 6 – Запускаем Patroni на всех нодах:
 
 ```
 sudo systemctl start patroni
@@ -253,7 +253,7 @@ Feb 18 17:44:26 node1 patroni[3430]: 2022-06-28 06:44:26,404 INFO: Lock owner: n
 Feb 18 17:44:26 node1 patroni[3430]: 2022-06-28 06:44:26,408 INFO: no action. i am the leader with the lock
 ```
 
-Step 7 – Configuring HA Proxy on the node haproxynode: 
+Шаг 7 – Настройка HAProxy: 
 
 ```
 sudo vi /etc/haproxy/haproxy.cfg
@@ -313,7 +313,7 @@ Feb 18 17:54:23 haproxynode haproxy[1753]: [WARNING] 254/065423 (1753) : Server 
 "HTTP status check returned code <3C>503<3E>">
  ```
 
-Step 8 – Testing High Availability Cluster Setup of PostgreSQL:
+Шаг 8 – Тестируем кластер:
 
 
 Симулируем отказ одной ноды:
@@ -327,14 +327,12 @@ sudo systemctl stop patroni
 ![alt text](https://speedmedia.jfrog.com/08612fe1-9391-4cf3-ac1a-6dd49c36b276/https://media.jfrog.com/wp-content/uploads/2022/07/09193620/Screen-Shot-2022-08-09-at-20.35.51.png/w_1024)
  
 
-Step 9 – Connect Postgres clients to the HAProxy IP address:
+Шаг 9 – Заходим на ноду через Haproxy:
 
 ```
 psql -h <haproxynode_ip> -p 5000 -U postgres
 
 psql -h 10.128.0.12 -p 5000 -U postgres
-
-psql -h 192.168.1.115 -p 5000 -U some_db
 
 fkdark@node1:~$ patronictl -c /etc/patroni.yml list
 + Cluster: postgres (6871178537652191317) ---+----+-----------+
