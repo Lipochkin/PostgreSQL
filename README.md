@@ -346,11 +346,4 @@ fkdark@node1:~$ patronictl -c /etc/patroni.yml list
 +--------+---------------+---------+---------+----+-----------+
 ```
 
- 
-
-Step 10 – Failover test:
-On one of the nodes run:
-
-
-sudo systemctl stop patroni
 
