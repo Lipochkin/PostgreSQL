@@ -1,129 +1,379 @@
 # PostgreSQL
-***Домашнее задание 14***
+***Проект***
 
-Триггеры, поддержка заполнения витрин
+***Тема: Создание и тестирование высоконагруженного отказоустойчивого кластера PostgreSQL на базе Patroni***
 
-Цель: Создать триггер для поддержки витрины в актуальном состоянии.
+Schema:
 
+![alt text](https://speedmedia.jfrog.com/08612fe1-9391-4cf3-ac1a-6dd49c36b276/https://media.jfrog.com/wp-content/uploads/2022/07/18231453/High_Available_PostgreSQL_Cluster_using_Patroni_and_HAProxy-1.jpg/w_768)
 
-Описание/Пошаговая инструкция выполнения домашнего задания:
+Architecture:
+OS: Ubuntu 22.04
 
-Скрипт и развернутое описание задачи – в ЛК (файл hw_triggers.sql) или по ссылке: https://disk.yandex.ru/d/l70AvknAepIJXQ
-В БД создана структура, описывающая товары (таблица goods) и продажи (таблица sales).
+Postgres version: 12
 
-Есть запрос для генерации отчета – сумма продаж по каждому товару.
+Machine: node1                   IP: <node1_ip>                 Role: Postgresql, Patroni
 
-БД была денормализована, создана таблица (витрина), структура которой повторяет структуру отчета.
+Machine: node2                   IP: <node2_ip>                 Role: Postgresql, Patroni
 
-Создать триггер на таблице продаж, для поддержки данных в витрине в актуальном состоянии (вычисляющий при каждой продаже сумму и записывающий её в витрину)
+Machine: node3                   IP: <node3_ip>                 Role: Postgresql, Patroni
 
-Подсказка: не забыть, что кроме INSERT есть еще UPDATE и DELETE
+Machine: etcdnode              IP: <etcdnode_ip>           Role: etcd
 
-
-Функция для расчёта и обновления суммы за проданные товары на витрине ***good_sum_mart***
-
-```
-
-CREATE OR REPLACE FUNCTION compute_sales()
-RETURNS trigger
-AS
-$$
-DECLARE
-    data_row record;
-   	new_good_sum_mart_record record;
-BEGIN
-	
-	CASE TG_OP
-	    WHEN 'DELETE'
-	        THEN data_row = OLD;
-	    WHEN 'UPDATE'
-	        THEN data_row = NEW; 
-	    WHEN 'INSERT'
-	        THEN data_row = NEW;
-	END CASE;
-      
-   	SELECT G.good_name as good_name, coalesce(sum(G.good_price * S.sales_qty), 0) as sum_sale into new_good_sum_mart_record
-		FROM pract_functions.goods G
-		LEFT JOIN pract_functions.sales S ON S.good_id = G.goods_id
-		WHERE G.goods_id = data_row.good_id
-		GROUP BY G.good_name;
-   	
-	IF EXISTS (select 1 from pract_functions.good_sum_mart where good_name = new_good_sum_mart_record.good_name) then
-		IF (new_good_sum_mart_record.sum_sale = 0) then 
-			DELETE FROM pract_functions.good_sum_mart where good_name = new_good_sum_mart_record.good_name;
-		ELSE
-			update pract_functions.good_sum_mart set sum_sale = new_good_sum_mart_record.sum_sale where good_name = new_good_sum_mart_record.good_name;
-		END IF;
-	ELSE
-		insert into pract_functions.good_sum_mart (good_name, sum_sale) values (new_good_sum_mart_record.good_name, new_good_sum_mart_record.sum_sale);
-	END IF;
-
-  RETURN data_row;
-END;
-
-```
-
-Триггер на изменение записей в строках
-
-```
-
-CREATE TRIGGER trg_after_row_change_sales
-AFTER INSERT OR UPDATE OR DELETE
-ON pract_functions.sales
-FOR EACH ROW
-EXECUTE FUNCTION compute_sales();
-
-```
-
-Примеры
-
-Каталог товаров ***goods***:
-| goods_id	| good_name 	| good_price	|
-| ------------- | ------------- | ------------- |
-| 1		| Спички хозайственные | 0.50	|	
-| 2		| Автомобиль Ferrari FXX K	| 185000000.01	|
-
-Добавление продаж в ***sales***
-
-```
-INSERT INTO pract_functions.sales (good_id,sales_time,sales_qty) VALUES
-	 (1,'2024-01-09 10:05:11.264733+03',2),
-	 (1,'2024-01-10 20:05:11.264733+03',5),
-	 (2,'2024-01-09 00:05:11.264733+03',3);
-```
-
-Витрина ***good_sum_mart*** после изменений
-
-| good_name	| sum_sale 	|
-| ------------- | ------------- |
-| Спички хозайственные	| 3.50	|
-| Автомобиль Ferrari FXX K	| 555000000.03	|
-
-Апдейтим в 1 строке количество продаж спичек в ***sales***
-
-```
-update pract_functions.sales set sales_qty = 10 where sales_id = 1;
-```
-
-Витрина ***good_sum_mart*** после изменений
-
-| good_name	| sum_sale 	|
-| ------------- | ------------- |
-| Спички хозайственные	| 7.5	|
-| Автомобиль Ferrari FXX K	| 555000000.03	|
-
-Удаляем 2 и 3 строки с продажами из ***sales***
-
-```
-delete from pract_functions.sales where sales_id = 2; 
-delete from pract_functions.sales where sales_id = 3; 
-```
-
-Витрина ***good_sum_mart*** после изменений
-
-| good_name	| sum_sale 	|
-| ------------- | ------------- |
-| Спички хозайственные	| 2.5	|
+Machine: haproxynode       IP: <haproxynode_ip>     Role: HA Proxy
 
 
+sudo apt update
+
+sudo hostnamectl set-hostname ***
+
+sudo apt install net-tools
+
+sudo vim /etc/hosts
+10.128.0.23 fkdarknode1
+10.128.0.13 fkdarknode2
+10.128.0.35 fkdarknode3
+10.128.0.21 fkdarketcd
+10.128.0.12 fkdarkhaproxy
+
+Step-by-step instructions guide
+ 
+
+Step 1 –  Setup node1, node2, node3:
+
+sudo apt update
+
+sudo hostnamectl set-hostname fkdarknodeN
+
+sudo apt install net-tools
+
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/postgresql-pgdg.list > /dev/null
+
+sudo apt update
+
+sudo apt-get install postgresql postgresql-server-dev-15
+
+sudo systemctl stop postgresql
+
+sudo ln -s /usr/lib/postgresql/15/bin/* /usr/sbin/
+
+//sudo apt install python-is-python3
+
+sudo apt -y install python3 python3-pip 
+
+sudo apt install python3-testresources   
+
+sudo pip3 install --upgrade setuptools 
+
+//sudo apt-get install --reinstall libpq-dev
+ 
+sudo pip3 install psycopg2 
+
+sudo pip3 install patroni
+
+sudo pip3 install python-etcd
+
+ 
+
+Step 2 –  Setup etcdnode:
+
+sudo apt update
+
+sudo hostnamectl set-hostname fkdarketcd
+
+sudo apt install net-tools
+
+sudo apt -y install etcd 
+
+ 
+
+Step 3 – Setup haproxynode:
+
+sudo apt update
+
+sudo hostnamectl set-hostname fkdarkhaproxy
+
+sudo apt install net-tools
+
+sudo apt -y install haproxy
+
+ 
+
+Step 4 – Configure etcd on the etcdnode: 
+
+sudo vi /etc/default/etcd   
+
+ETCD_LISTEN_PEER_URLS="http://0.0.0.0:2380" 
+ETCD_LISTEN_CLIENT_URLS="http://0.0.0.0:2379, http://localhost:2379"
+ETCD_INITIAL_ADVERTISE_PEER_URLS="http://10.128.0.29:2380"
+ETCD_INITIAL_CLUSTER="default=http://10.128.0.29:2380"
+ETCD_ADVERTISE_CLIENT_URLS="http://10.128.0.29:2379"
+ETCD_INITIAL_CLUSTER_TOKEN="etcd-cluster"
+ETCD_INITIAL_CLUSTER_STATE="new"
+
+sudo systemctl restart etcd 
+
+sudo systemctl status etcd
+
+curl http://10.128.0.29:2380/members
+
+ 
+
+Step 5 – Configure Patroni on the node1, on the node2 and on the node3:
+
+sudo vi /etc/patroni.yml
+
+scope: postgres
+namespace: /db/
+name: fkdarknode2
+
+restapi:
+    listen: 10.128.0.13:8008
+    connect_address: 158.160.118.67:8008
+
+etcd:
+    host: 51.250.94.80:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      use_slots: true
+      parameters:
+
+  initdb:
+  - encoding: UTF8
+  - data-checksums
+
+  pg_hba:
+  - host replication replicator 127.0.0.1/32 md5
+  - host replication replicator 158.160.42.67/0 md5
+  - host replication replicator 158.160.118.67/0 md5
+  - host replication replicator 158.160.38.111/0 md5
+  - host replication replicator 178.154.206.2/0 md5
+  - host all all 0.0.0.0/0 md5
+
+  users:
+    admin:
+      password: admin
+      options:
+        - createrole
+        - createdb
+
+postgresql:
+  listen: 10.128.0.13:5432
+  connect_address: 158.160.118.67:5432
+  data_dir: /data/patroni
+  pgpass: /tmp/pgpass
+  authentication:
+    replication:
+      username: replicator
+      password: replicator
+    superuser:
+      username: postgres
+      password: postgres
+  parameters:
+      unix_socket_directories: '/var/run/postgresql'
+
+tags:
+    nofailover: false
+    noloadbalance: false
+    clonefrom: false
+    nosync: false
+
+
+sudo mkdir -p /data/patroni
+
+sudo chown postgres:postgres /data/patroni
+
+sudo chmod 700 /data/patroni 
+
+sudo vi /etc/systemd/system/patroni.service
+
+[Unit]
+Description=High availability PostgreSQL Cluster
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=postgres
+Group=postgres
+ExecStart=/usr/local/bin/patroni /etc/patroni.yml
+KillMode=process
+TimeoutSec=30
+Restart=no
+
+[Install]
+WantedBy=multi-user.target
+
+ 
+
+Step 6 – Start Patroni service on the node1, on the node2 and on the node3:
+
+sudo systemctl start patroni
+
+sudo systemctl status patroni
+
+dmi@node1:~$ sudo systemctl status patroni
+
+●  patroni.service - High availability PostgreSQL Cluster
+
+     Loaded: loaded (/etc/systemd/system/patroni.service; disabled; vendor preset: enabled)
+
+     Active: active (running) since Tue 2022-06-28 06:20:08 EDT; 24min ago
+
+   Main PID: 3430 (patroni)
+
+      Tasks: 13 (limit: 2319)
+
+     Memory: 95.9M
+
+     CGroup: /system.slice/patroni.service
+
+             ├─3430 /usr/bin/python3 /usr/local/bin/patroni /etc/patroni.yml
+
+             ├─4189 postgres -D /data/patroni --config-file=/data/patroni/postgresql.conf --listen_addresses=192.168.1.139 --port=5432 --cluster_name=postgres --wal_level=replica --h>
+
+             ├─4197 postgres: postgres: checkpointer
+
+             ├─4198 postgres: postgres: background writer
+
+             ├─4199 postgres: postgres: walwriter
+
+             ├─4200 postgres: postgres: autovacuum launcher
+
+             ├─4201 postgres: postgres: stats collector
+
+             ├─4202 postgres: postgres: logical replication launcher
+
+             └─4204 postgres: postgres: postgres postgres 192.168.1.139(50256) idle
+
+Jun 28 06:43:46 node1 patroni[3430]: 2022-06-28 06:43:46,405 INFO: Lock owner: node1; I am node1
+Jun 28 06:43:46 node1 patroni[3430]: 2022-06-28 06:43:46,410 INFO: no action. i am the leader with the lock
+Jun 28 06:43:56 node1 patroni[3430]: 2022-06-28 06:43:56,450 INFO: Lock owner: node1; I am node1
+Jun 28 06:43:56 node1 patroni[3430]: 2022-06-28 06:43:56,455 INFO: no action. i am the leader with the lock
+Jun 28 06:44:06 node1 patroni[3430]: 2022-06-28 06:44:06,409 INFO: Lock owner: node1; I am node1
+Jun 28 06:44:06 node1 patroni[3430]: 2022-06-28 06:44:06,414 INFO: no action. i am the leader with the lock
+Jun 28 06:44:16 node1 patroni[3430]: 2022-06-28 06:44:16,404 INFO: Lock owner: node1; I am node1
+Jun 28 06:44:16 node1 patroni[3430]: 2022-06-28 06:44:16,407 INFO: no action. i am the leader with the lock
+Jun 28 06:44:26 node1 patroni[3430]: 2022-06-28 06:44:26,404 INFO: Lock owner: node1; I am node1
+Jun 28 06:44:26 node1 patroni[3430]: 2022-06-28 06:44:26,408 INFO: no action. i am the leader with the lock
+ 
+
+Step 7 – Configuring HA Proxy on the node haproxynode: 
+
+sudo vi /etc/haproxy/haproxy.cfg
+
+Replace its context with this:
+
+global
+
+        maxconn 100
+        log     127.0.0.1 local2
+
+defaults
+        log global
+        mode tcp
+        retries 2
+        timeout client 30m
+        timeout connect 4s
+        timeout server 30m
+        timeout check 5s
+
+listen stats
+    mode http
+    bind *:7000
+    stats enable
+    stats uri /
+
+listen postgres
+    bind *:5000
+    option httpchk
+    http-check expect status 200
+    default-server inter 3s fall 3 rise 2 on-marked-down shutdown-sessions
+    server node1 <node1_ip>:5432 maxconn 100 check port 8008
+    server node2 <node2_ip>:5432 maxconn 100 check port 8008
+    server node3 <node3_ip>:5432 maxconn 100 check port 8008
+
+sudo systemctl restart haproxy
+
+sudo systemctl status haproxy
+
+● haproxy.service - HAProxy Load Balancer 
+      Loaded: loaded (/lib/systemd/system/haproxy.service; enabled; vendor preset: enabled) 
+      Active: active (running) since Tue 2022-06-28 06:54:22 EDT; 7s ago 
+        Docs: man:haproxy(1) 
+              file:/usr/share/doc/haproxy/configuration.txt.gz 
+     Process: 1736 ExecStartPre=/usr/sbin/haproxy -f $CONFIG -c -q $EXTRAOPTS (code=exited,status=0/SUCCESS)   Main PID: 1751 (haproxy) 
+     Tasks: 3 (limit: 2319) 
+   Memory: 2.1M 
+   CGroup: /system.slice/haproxy.service
+            ├─1751 /usr/sbin/haproxy -Ws -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -S /run/haproxy-master.sock             
+            └─1753 /usr/sbin/haproxy -Ws -f /etc/haproxy/haproxy.cfg -p /run/haproxy.pid -S /run/haproxy-master.sock 
+Jun 28 06:54:22 haproxynode systemd[1]: Starting HAProxy Load Balancer... 
+Jun 28 06:54:22 haproxynode haproxy[1751]: [NOTICE] 254/065422 (1751) : New worker #1 (1753) forked 
+Jun 28 06:54:22 haproxynode systemd[1]: Started HAProxy Load Balancer. 
+Jun 28 06:54:23 haproxynode haproxy[1753]: [WARNING] 254/065423 (1753) : Server postgres/node2 is DOWN, reason: Layer7 wrong status, code: 503, info: 
+"HTTP status check returned code <3C>503<3E>">
+ Jun 28 06:54:24 haproxynode haproxy[1753]: [WARNING] 254/065424 (1753) : Server postgres/node3 is DOWN, reason: Layer7 wrong status, code: 503, info: 
+"HTTP status check returned code <3C>503<3E>">
+ 
+
+Step 8 – Testing High Availability Cluster Setup of PostgreSQL:
+
+http://<haproxynode_ip>:7000/>
+
+
+
+Simulate node1 crash:
+
+
+sudo systemctl stop patroni
+
+In this case, the second Postgres server is promoted to master.
+
+
+
+ 
+
+Step 9 – Connect Postgres clients to the HAProxy IP address:
+
+psql -h <haproxynode_ip> -p 5000 -U postgres
+
+dmi@dmi-mac ~ % psql -h 192.168.1.115 -p 5000 -U postgres
+Password for user postgres: 
+psql (12.4)
+Type "help" for help.
+
+postgres=# 
+
+dmi@dmi-mac ~ % psql -h 192.168.1.115 -p 5000 -U some_db
+Password for user some_user: 
+psql (12.4)
+Type "help" for help.
+
+some_db=>
+
+dmi@node1:~$ patronictl -c /etc/patroni.yml list
++ Cluster: postgres (6871178537652191317) ---+----+-----------+
+| Member | Host          | Role    | State   | TL | Lag in MB |
++--------+---------------+---------+---------+----+-----------+
+| node1  | 192.168.1.139 | Replica | running |  2 |         0 |
+| node2  | 192.168.1.110 | Leader  | running |  2 |           |
+| node3  | 192.168.1.146 | Replica | running |  2 |         0 |
++--------+---------------+---------+---------+----+-----------+
+dmi@node1:~$ 
+
+ 
+
+Step 10 – Failover test:
+On one of the nodes run:
+
+
+sudo systemctl stop patroni
 
